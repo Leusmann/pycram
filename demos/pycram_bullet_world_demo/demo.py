@@ -44,7 +44,7 @@ with simulated_robot:
 
     cereal_desig = move_and_detect(ObjectType.BREAKFAST_CEREAL)
 
-    TransportAction(cereal_desig, ["right"], [Pose([5.2, 3.4, 0.8], [0, 0, 1, 1])]).resolve().perform()
+    TransportAction(cereal_desig, ["right"], [Pose([5.2, 3.3, 0.8], [0, 0, 1, 1])]).resolve().perform()
 
     bowl_desig = move_and_detect(ObjectType.BOWL)
 
@@ -70,7 +70,7 @@ with simulated_robot:
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
     close_loc = drawer_open_loc.pose
-    close_loc.position.y += 0.1
+    close_loc.position.y -= 0.1
     NavigateAction([close_loc]).resolve().perform()
 
     CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
