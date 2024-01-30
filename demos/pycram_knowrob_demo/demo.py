@@ -9,16 +9,15 @@ import pycram.external_interfaces.knowrob as knowrob
 
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([1, 2, 0]))
-apartment = Object("apartment", ObjectType.ENVIRONMENT, "apartment.urdf")
+# apartment = Object("apartment", ObjectType.ENVIRONMENT, "apartment.urdf")
+apartment = Object("apartment", ObjectType.ENVIRONMENT, "apartment-paper.urdf")
 
-milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.5, 2, 1.02]), color=[1, 0, 0, 1])
-cereal = Object("cereal", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.3, 1.05]),
-                color=[0, 1, 0, 1])
-spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([2.4, 2.2, 0.85]), color=[0, 0, 1, 1])
-bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.5, 2.2, 1.02]), color=[1, 1, 0, 1])
-apartment.attach(spoon, 'cabinet10_drawer_top')
+milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.6, 2.8, 1.05]), color=[1, 0, 0, 1])
+bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.4, 2.3, 0.95]), color=[1, 1, 0, 1])
+cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.8, 2.5, 1.0]), color=[1, 1, 1, 1])
+# apartment.attach(spoon, 'cabinet10_drawer_top')
 
-pick_pose = Pose([2.7, 2.15, 1])
+pick_pose = Pose([2.7, 2.5, 1])
 
 robot_desig = BelieveObject(names=["pr2"])
 apartment_desig = BelieveObject(names=["apartment"])
@@ -26,7 +25,7 @@ apartment_desig = BelieveObject(names=["apartment"])
 
 @with_simulated_robot
 def move_and_detect(obj_type):
-    NavigateAction(target_locations=[Pose([1.7, 2, 0])]).resolve().perform()
+    NavigateAction(target_locations=[Pose([1.4, 2.5, 0])]).resolve().perform()
 
     LookAtAction(targets=[pick_pose]).resolve().perform()
 
@@ -40,62 +39,21 @@ with simulated_robot:
 
     MoveTorsoAction([0.25]).resolve().perform()
 
-
-    # food_type = knowrob.Prolog.ensure_once("[Query]")
+    # drink_type = knowrob.Prolog.ensure_once("[Query]")
     # maybe I need to do something with the food designator (Jonas said something about the type and mapping this to the
     # Objecttype Enum
 
-    food_desig = move_and_detect(ObjectType.MILK)
+    drink_desig = move_and_detect(ObjectType.MILK)
 
-    #milk_desig = move_and_detect(ObjectType.MILK)
+    drink_desig = move_and_detect(ObjectType.MILK)
 
-    TransportAction(food_desig, ["left"], [Pose([4.8, 3.55, 0.8])]).resolve().perform()
+
+    TransportAction(drink_desig, ["left"], [Pose([4.8, 3.55, 0.8])]).resolve().perform()
 
     # container_type = knowrob.Prolog.ensure_once("[Query]")
     # Same as food designator
 
-    container_desig = move_and_detect(ObjectType.BOWL)
+    container_desig = move_and_detect(ObjectType.JEROEN_CUP)
     # bowl_desig = move_and_detect(ObjectType.BOWL)
 
     TransportAction(container_desig, ["left"], [Pose([5, 3.3, 0.8], [0, 0, 1, 1])]).resolve().perform()
-
-    # Finding and navigating to the drawer holding the spoon
-    handle_desig = ObjectPart(names=["handle_cab10_t"], part_of=apartment_desig.resolve())
-    drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
-                                        robot_desig=robot_desig.resolve()).resolve()
-
-    # Example of Opening Stuff
-    # NavigateAction([drawer_open_loc.pose]).resolve().perform()
-    #
-    # OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
-    # spoon.detach(apartment)
-    #
-    # # Detect and pickup the spoon
-    # LookAtAction([apartment.get_link_pose("handle_cab10_t")]).resolve().perform()
-    #
-    # spoon_desig = DetectAction(BelieveObject(types=[ObjectType.SPOON])).resolve().perform()
-    #
-    # pickup_arm = "left" if drawer_open_loc.arms[0] == "right" else "right"
-    # PickUpAction(spoon_desig, [pickup_arm], ["top"]).resolve().perform()
-    #
-    # ParkArmsAction([Arms.BOTH]).resolve().perform()
-    #
-    # close_loc = drawer_open_loc.pose
-    # close_loc.position.y -= 0.1
-    # NavigateAction([close_loc]).resolve().perform()
-    #
-    # CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
-    #
-    # ParkArmsAction([Arms.BOTH]).resolve().perform()
-    #
-    # MoveTorsoAction([0.15]).resolve().perform()
-    #
-    # # Find a pose to place the spoon, move and then place it
-    # spoon_target_pose = Pose([4.85, 3.3, 0.8], [0, 0, 1, 1])
-    # placing_loc = CostmapLocation(target=spoon_target_pose, reachable_for=robot_desig.resolve()).resolve()
-    #
-    # NavigateAction([placing_loc.pose]).resolve().perform()
-    #
-    # PlaceAction(spoon_desig, [spoon_target_pose], [pickup_arm]).resolve().perform()
-    #
-    # ParkArmsAction([Arms.BOTH]).resolve().perform()
