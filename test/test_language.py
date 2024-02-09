@@ -1,6 +1,8 @@
 import threading
+import time
 import unittest
 from pycram.designators.action_designator import *
+from pycram.designators.object_designator import BelieveObject
 from pycram.enums import ObjectType, State
 from pycram.fluent import Fluent
 from pycram.plan_failures import PlanFailure
@@ -8,6 +10,7 @@ from pycram.pose import Pose
 from pycram.language import Sequential, Language, Parallel, TryAll, TryInOrder, Monitor, Repeat, Code, RenderTree
 from pycram.process_module import simulated_robot
 import test_bullet_world
+from pycram.robot_descriptions import robot_description
 
 
 class LanguageTestCase(test_bullet_world.BulletWorldTest):
@@ -166,7 +169,7 @@ class LanguageTestCase(test_bullet_world.BulletWorldTest):
     def test_perform_parallel(self):
 
         def check_thread_id(main_id):
-            self.assertNotEquals(main_id, threading.get_ident())
+            self.assertNotEqual(main_id, threading.get_ident())
         act = Code(check_thread_id, {"main_id": threading.get_ident()})
         act2 = Code(check_thread_id, {"main_id": threading.get_ident()})
         act3 = Code(check_thread_id, {"main_id": threading.get_ident()})
