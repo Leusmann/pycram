@@ -15,6 +15,8 @@ apartment = Object("apartment", ObjectType.ENVIRONMENT, "apartment-paper.urdf")
 milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.6, 2.8, 1.05]), color=[1, 0, 0, 1])
 bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.4, 2.3, 0.95]), color=[1, 1, 0, 1])
 cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.8, 2.5, 1.0]), color=[1, 1, 1, 1])
+cerial = Object("cerial", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.7, 1.05]),
+                color=[0, 1, 0, 1])
 # apartment.attach(spoon, 'cabinet10_drawer_top')
 
 pick_pose = Pose([2.7, 2.5, 1])
@@ -33,22 +35,20 @@ def move_and_detect(obj_type):
 
     return object_desig
 
-
 with simulated_robot:
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
 
     # drink_type = knowrob.Prolog.ensure_once("[Query]")
-    # maybe I need to do something with the food designator (Jonas said something about the type and mapping this to the
+    # maybe I need to do something with the food designator (Jonas said something aboyut the type and mapping this to the
     # Objecttype Enum
 
     drink_desig = move_and_detect(ObjectType.MILK)
 
     drink_desig = move_and_detect(ObjectType.MILK)
 
-
-    TransportAction(drink_desig, ["left"], [Pose([4.8, 3.55, 0.8])]).resolve().perform()
+    TransportAction(drink_desig, ["left"], [Pose([4.4, 3.7, 1.1])]).resolve().perform()
 
     # container_type = knowrob.Prolog.ensure_once("[Query]")
     # Same as food designator
@@ -56,4 +56,4 @@ with simulated_robot:
     container_desig = move_and_detect(ObjectType.JEROEN_CUP)
     # bowl_desig = move_and_detect(ObjectType.BOWL)
 
-    TransportAction(container_desig, ["left"], [Pose([5, 3.3, 0.8], [0, 0, 1, 1])]).resolve().perform()
+    TransportAction(container_desig, ["left"], [Pose([4.8, 3.7, 1.1], [0, 0, 1, 1])]).resolve().perform()
