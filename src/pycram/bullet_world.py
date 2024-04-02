@@ -528,8 +528,13 @@ class Gui(threading.Thread):
             # Disable the side windows of the GUI
             p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
             # Change the init camera pose
-            p.resetDebugVisualizerCamera(cameraDistance=2.0, cameraYaw=90.0, cameraPitch=-50,
-                                         cameraTargetPosition=[6, 2.5, 2])
+            # picture place
+            p.resetDebugVisualizerCamera(cameraDistance=2.0, cameraYaw=92.5, cameraPitch=-25.0,
+                                         cameraTargetPosition=[2.58, 2.58, 0.85])
+            # normal place
+            # normal place
+            # p.resetDebugVisualizerCamera(cameraDistance=2.0, cameraYaw=90.0, cameraPitch=-50,
+            #                              cameraTargetPosition=[6, 2.5, 2])
 
             # Get the initial camera target location
             cameraTargetPosition = p.getDebugVisualizerCamera()[11]
@@ -546,8 +551,8 @@ class Gui(threading.Thread):
             maxSpeed = 16
 
             # Set initial Camera Rotation
-            cameraYaw = 50
-            cameraPitch = -35
+            cameraYaw = p.getDebugVisualizerCamera()[8]
+            cameraPitch = p.getDebugVisualizerCamera()[9]
 
             # Keep track of the mouse state
             mouseState = [0, 0, 0]
