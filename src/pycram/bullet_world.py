@@ -529,8 +529,8 @@ class Gui(threading.Thread):
             p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
             # Change the init camera pose
             # picture place
-            p.resetDebugVisualizerCamera(cameraDistance=2.0, cameraYaw=92.5, cameraPitch=-25.0,
-                                         cameraTargetPosition=[2.58, 2.58, 0.85])
+            p.resetDebugVisualizerCamera(cameraDistance=2.0, cameraYaw=-21.00, cameraPitch=-32.75,
+                                         cameraTargetPosition=[6.62, -6.92, 1.60])
             # normal place
             # normal place
             # p.resetDebugVisualizerCamera(cameraDistance=2.0, cameraYaw=90.0, cameraPitch=-50,
@@ -756,6 +756,7 @@ class Object:
         self.id, self.path = _load_object(name, path, position, orientation, self.world, color, ignoreCachedFiles)
         self.joints: Dict[str, int] = self._joint_or_link_name_to_id("joint")
         self.links: Dict[str, int] = self._joint_or_link_name_to_id("link")
+        print(self.links)
         self.attachments: Dict[Object, List] = {}
         self.cids: Dict[Object, int] = {}
         self.original_pose = pose_in_map
