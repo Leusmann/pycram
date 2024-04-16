@@ -19,8 +19,8 @@ apartment = Object("apartment", ObjectType.ENVIRONMENT, "Modified_ApartmentECAI.
 # milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.6, 2.8, 1.05]), color=[1, 0, 0, 1])
 milk = Object("milk", ObjectType.MILK, "MilkBox.stl", pose=Pose([6.85, -4.95, 0.97]), color=[1, 0, 0, 1])
 # bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.4, 2.3, 0.95]), color=[1, 1, 0, 1])
-bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([7.05, -4.92, 0.90]), color=[1, 1, 0, 1])
-# bowl = Object("bowl", ObjectType.BOWL, "SmallBowl.stl", pose=Pose([7.05, -4.92, 0.90]), color=[1, 1, 0, 1])
+# bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([7.05, -5.00, 0.91],[0,0,1,0]) , color=[1, 1, 0, 1])
+bowl = Object("bowl", ObjectType.BOWL, "SmallBowl.stl", pose=Pose([7.05, -4.92, 0.90],[0,0,1,0]), color=[1, 1, 0, 1])
 # cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.8, 2.5, 1.0]), color=[1, 1, 1, 1])
 cup = Object("cup", ObjectType.JEROEN_CUP, "Cup.stl", pose=Pose([7.05, -5.17, 0.90],[0,0,1,0]), color=[1, 1, 1, 1])
 # cerial = Object("cerial", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.7, 1.05]),
