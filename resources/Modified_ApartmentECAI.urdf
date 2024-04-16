@@ -4890,40 +4890,45 @@
     </collision>
   </link>
   
-  <joint name="table_joint" type="fixed">
-    <origin xyz="5.0 4.0 0.0" rpy="0.0 0.0 0.0"/>
+  <joint name="SM_DiningTable_joint" type="fixed">
+    <origin xyz="4.059035468329589 -6.57453813671817 0.37744309672918996" rpy="0.0 0.0 1.570798397064209"/>
     <parent link="Apartment"/>
-    <child link="table"/>
+    <child link="SM_DiningTable"/>
   </joint>
-  <link name="table">
-    <collision name="Geom_0">
-      <origin xyz="0.0 0.0 1.0" rpy="0.0 0.0 0.0"/>
+  <link name="SM_DiningTable">
+    <inertial>
+      <origin xyz="1.002331714516913e-06 9.446275726077147e-07 0.2834741771221161" rpy="-3.14157772064209 -1.785148697308614e-06 1.5708014965057373"/>
+      <mass value="36.17988967895508"/>
+      <inertia ixx="7.810641765594482" ixy="0.0" ixz="0.0" iyy="12.955097198486328" iyz="0.0" izz="13.534605026245117"/>
+    </inertial>
+    <collision name="UCX_DiningTable_001">
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-        <box size="2.0 1.0 0.10000000149011612"/>
+        <mesh filename="file://ApartmentECAI/meshes/stl/UCX_DiningTable_001.stl" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
-    <collision name="Geom_1">
-      <origin xyz="0.949999988079071 0.44999998807907104 0.5" rpy="0.0 0.0 0.0"/>
+    <collision name="UCX_DiningTable_002">
+      <origin xyz="0.0 0.0 -0.08860373497009277" rpy="0.0 0.0 3.1415927410125732"/>
       <geometry>
-        <box size="0.10000000149011612 0.10000000149011612 1.0"/>
+        <mesh filename="file://ApartmentECAI/meshes/stl/UCX_DiningTable_002.stl" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
-    <collision name="Geom_2">
-      <origin xyz="-0.949999988079071 0.44999998807907104 0.5" rpy="0.0 0.0 0.0"/>
+    <collision name="UCX_DiningTable_003">
+      <origin xyz="0.0 0.0 -0.08860373497009277" rpy="0.0 0.0 3.1415927410125732"/>
       <geometry>
-        <box size="0.10000000149011612 0.10000000149011612 1.0"/>
+        <mesh filename="file://ApartmentECAI/meshes/stl/UCX_DiningTable_003.stl" scale="-1.0 1.0 1.0"/>
       </geometry>
     </collision>
-    <collision name="Geom_3">
-      <origin xyz="0.949999988079071 -0.44999998807907104 0.5" rpy="0.0 0.0 0.0"/>
+    <collision name="UCX_DiningTable_004">
+      <origin xyz="0.0 0.0 -0.08860373497009277" rpy="0.0 0.0 3.1415927410125732"/>
       <geometry>
-        <box size="0.10000000149011612 0.10000000149011612 1.0"/>
+        <mesh filename="file://ApartmentECAI/meshes/stl/UCX_DiningTable_004.stl" scale="1.0 -1.0 1.0"/>
       </geometry>
     </collision>
-    <collision name="Geom_4">
-      <origin xyz="-0.949999988079071 -0.44999998807907104 0.5" rpy="0.0 0.0 0.0"/>
+    <collision name="UCX_DiningTable_005">
+      <origin xyz="0.0 0.0 -0.08860373497009277" rpy="0.0 0.0 3.1415927410125732"/>
       <geometry>
-        <box size="0.10000000149011612 0.10000000149011612 1.0"/>
+        <mesh filename="file://ApartmentECAI/meshes/stl/UCX_DiningTable_005.stl" scale="-1.0 -1.0 1.0"/>
       </geometry>
     </collision>
   </link>

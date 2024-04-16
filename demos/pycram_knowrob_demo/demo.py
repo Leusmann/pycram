@@ -17,11 +17,12 @@ robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([8, -5.35, 0],[0,0
 apartment = Object("apartment", ObjectType.ENVIRONMENT, "Modified_ApartmentECAI.urdf")
 
 # milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([2.6, 2.8, 1.05]), color=[1, 0, 0, 1])
-milk = Object("milk", ObjectType.MILK, "milk.stl", pose=Pose([6.85, -4.95, 0.97]), color=[1, 0, 0, 1])
+milk = Object("milk", ObjectType.MILK, "MilkBox.stl", pose=Pose([6.85, -4.95, 0.97]), color=[1, 0, 0, 1])
 # bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([2.4, 2.3, 0.95]), color=[1, 1, 0, 1])
 bowl = Object("bowl", ObjectType.BOWL, "bowl.stl", pose=Pose([7.05, -4.92, 0.90]), color=[1, 1, 0, 1])
+# bowl = Object("bowl", ObjectType.BOWL, "SmallBowl.stl", pose=Pose([7.05, -4.92, 0.90]), color=[1, 1, 0, 1])
 # cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([2.8, 2.5, 1.0]), color=[1, 1, 1, 1])
-cup = Object("cup", ObjectType.JEROEN_CUP, "jeroen_cup.stl", pose=Pose([7.05, -5.17, 0.98],[0,0,1,0]), color=[1, 1, 1, 1])
+cup = Object("cup", ObjectType.JEROEN_CUP, "Cup.stl", pose=Pose([7.05, -5.17, 0.90],[0,0,1,0]), color=[1, 1, 1, 1])
 # cerial = Object("cerial", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([2.5, 2.7, 1.05]),
 cerial = Object("cerial", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([6.85, -5.47, 0.97]),
                 color=[0, 1, 0, 1])
@@ -53,17 +54,14 @@ with simulated_robot:
     # maybe I need to do something with the food designator (Jonas said something aboyut the type and mapping this to the
     # Objecttype Enum
 
-
     drink_desig = move_and_detect(ObjectType.MILK)
 
-    drink_desig = move_and_detect(ObjectType.MILK)
-
-    TransportAction(drink_desig, ["left"], [Pose([4.4, 3.7, 1.1])]).resolve().perform()
+    TransportAction(drink_desig, ["left"], [Pose([3.85, -6.58, 0.86])]).resolve().perform()
 
     # container_type = knowrob.Prolog.ensure_once("[Query]")
     # Same as food designator
 
-    container_desig = move_and_detect(ObjectType.JEROEN_CUP)
-    # bowl_desig = move_and_detect(ObjectType.BOWL)
+    # container_desig = move_and_detect(ObjectType.JEROEN_CUP)
+    container_desig = move_and_detect(ObjectType.BOWL)
 
-    TransportAction(container_desig, ["left"], [Pose([4.8, 3.7, 1.1], [0, 0, 1, 1])]).resolve().perform()
+    TransportAction(container_desig, ["left"], [Pose([4.20, -6.58, 0.80], [0, 0, 1, 1])]).resolve().perform()
