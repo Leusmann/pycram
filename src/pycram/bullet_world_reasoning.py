@@ -11,6 +11,7 @@ from .robot_descriptions import robot_description
 from .helper import _transform_to_torso, _apply_ik, calculate_wrist_tool_offset, inverseTimes
 from .pose import Pose, Transform
 from typing import List, Tuple, Optional, Union, Dict
+from time import sleep
 
 
 class ReasoningError(Exception):
@@ -143,6 +144,16 @@ def contact(object1: Object,
 
         else:
             return con_points != ()
+
+def pospection_contact(object_to_prospect,objects_to_check_with,new_pose):
+    prospective_shadow_object=BulletWorld.current_bullet_world.get_shadow_object(object_to_prospect)
+    shadow_objects_to_check=BulletWorld.current_bullet_world.get_shadow_object(objects_to_check_with)
+    prospective_shadow_object.set_pose(new_pose)
+    with Use_shadow_world():
+        return contact(prospective_shadow_object,shadow_objects_to_check)
+
+
+
 
 
 def visible(object: Object,
