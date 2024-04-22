@@ -35,7 +35,7 @@ robot_desig = BelieveObject(names=["pr2"])
 apartment_desig = BelieveObject(names=["apartment"])
 
 # TODOs
-# - FN_getObjectParts(objName, semanticMap)
+# - debugging, ensuring sensible results of queries
 
 def prepareSemanticMap(sceneGraphOwlFile):
     onto = owlready2.get_ontology("file://"+sceneGraphOwlFile).load()
@@ -85,7 +85,7 @@ def sanityCheckListOfUniques(*lists):
     return [x[0] for x in retq]
     
 def getObjectPartNamesAndSelf(objName: str, semanticMap):
-    return set(FN_getObjectParts(objName, semanticMap)).union([objName])
+    return set(getObjectPartsFromSemanticMap(objName, semanticMap)).union([objName])
 
 # we assume we have only object names as keys for semantic reports
 #     this is true currently as the USD does not record types.
