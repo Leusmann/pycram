@@ -133,9 +133,9 @@ def whichItemsContainDrinks(semanticMap, semanticReports: dict):
     # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
     plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
     # Find classes of entities believed to be drinks. 
-    beverages = set(sr.dl.whatSubclases('dfl:beverage.n.wn.food'))
+    beverages = set(sr.dl.whatSubclasses('dfl:beverage.n.wn.food'))
     # Find classes of entities believed to be containers.
-    containersForDrinks = set([x for x in sr.dl.whatSubclases('dfl:container.n.wn.artifact') if
+    containersForDrinks = set([x for x in sr.dl.whatSubclasses('dfl:container.n.wn.artifact') if
                                   beverages.intersection(sr.dl.whatPartTypesDoesObjectHave(x))])
     # Make a list of all items in the scene that are beverages
     plausibleDrinks = [x for x,v in plausibleClassMap.items() if beverages.intersection(v)]
@@ -166,10 +166,12 @@ def whichPartsOfObjectAreGraspable(objName: str, semanticMap, semanticReports: d
     # Find all plausible object classes for the identified object names
     #     Note: here, plausibleClassMap is not for the entire scene but only for the objPartNames subset
     plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports, whiteList=objPartNames)
+    # Get all types of objects with the graspable disposition
+    graspables = set(sr.dl.whatHasDisposition("hold.v.wn.contact..grasp"))
     # Get all plausible types
     plausibleTypes = set(itertools.chain.from_iterable(plausibleClassMap.values()))
     # Get all plausible types of objects with the graspable disposition
-    plausibleHandleTypes = [x for x in plausibleTypes if sr.dl.doesObjectHaveDisposition("hold.v.wn.contact..grasp")]
+    plausibleHandleTypes = set([x for x in plausibleTypes if x in graspables])
     # Get all object names that are plausibly handles
     return [x for x,v in plausibleClassMap.items() if plausibleHandleTypes.intersection(v)]
 
