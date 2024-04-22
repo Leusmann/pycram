@@ -153,7 +153,7 @@ def whichLocationsMayHaveItem(objName: str, semanticMap, semanticReports: dict):
     itemTypes = plausibleClassMap.get(objName, [])
     # Find types of objects that could plausibly store objName
     storages = itertools.chain.from_iterable(
-                   [sr.dl.whatToolsCanPerformTaskOnObject("store.v.wn.possession..place", x)
+                   [sr.dl.whatToolsCanPerformTaskOnObject("dfl:store.v.wn.possession..place", x)
                        for x in itemTypes])
     storages = set(storages)
     # Find objects in scene that can plausibly store item
