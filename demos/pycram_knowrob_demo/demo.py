@@ -167,7 +167,7 @@ def whichPartsOfObjectAreGraspable(objName: str, semanticMap, semanticReports: d
     #     Note: here, plausibleClassMap is not for the entire scene but only for the objPartNames subset
     plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports, whiteList=objPartNames)
     # Get all types of objects with the graspable disposition
-    graspables = set(sr.dl.whatHasDisposition("hold.v.wn.contact..grasp"))
+    graspables = set(sr.dl.whatHasDisposition("dfl:hold.v.wn.contact..grasp.Theme"))
     # Get all plausible types
     plausibleTypes = set(itertools.chain.from_iterable(plausibleClassMap.values()))
     # Get all plausible types of objects with the graspable disposition
