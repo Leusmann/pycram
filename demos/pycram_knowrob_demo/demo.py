@@ -83,7 +83,7 @@ def sanityCheckListOfUniques(*lists):
     aux = set()
     retq = [(x,aux.add(x)) for x in itertools.chain.from_iterable(lists) if x not in aux]
     return [x[0] for x in retq]
-    
+
 def getObjectPartNamesAndSelf(objName: str, semanticMap):
     return set(getObjectPartsFromSemanticMap(objName, semanticMap)).union([objName])
 
@@ -122,7 +122,7 @@ def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
                                         x in foundBreakfastFoodTypes])
         plausibleUtensilTypes = set(plausibleUtensilTypes)
         # Find all objects in the scene that plausibly are of the appropriate utensil types.
-        plausibleUtensils = [x,v in plausibleClassMap.items() if plausibleUtensilTypes.intersection(v)]
+        plausibleUtensils = [x for x,v in plausibleClassMap.items() if plausibleUtensilTypes.intersection(v)]
         # Sanity ceck: make sure nothing is returned twice. In case we need a list of items first, then utensils,
         #     we do not just call set here.
         return sanityCheckListOfUniques(plausibleItems,plausibleUtensils)
@@ -174,7 +174,7 @@ def whichPartsOfObjectAreGraspable(objName: str, semanticMap, semanticReports: d
     return [x for x,v in plausibleClassMap.items() if plausibleHandleTypes.intersection(v)]
 
 #    \item Where should I put the utensils for breakfast?
-def whereToPlaceItemsForMeal(meal: str, semanticMap, semanticReports: dict)
+def whereToPlaceItemsForMeal(meal: str, semanticMap, semanticReports: dict):
     ## currently, all meals go to the same places
     #meal = meal.lower().strip()
     #if meal in {'breakfast', 'break fast', 'morning meal'}:
@@ -205,6 +205,9 @@ with simulated_robot:
     ParkArmsAction([Arms.BOTH]).resolve().perform()
 
     MoveTorsoAction([0.25]).resolve().perform()
+
+    semanticMap = prepareSemanticMap(sceneGraphOwlFile)
+    semanticReports = initializeSemanticReports(semanticMap)
 
     # Not sure how to generalize maybe list will items I need to move?
     # There are semnatic costmaps which could give me pose for items
