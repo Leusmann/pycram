@@ -73,8 +73,8 @@ def initializeSemanticReports(semanticMap):
     dflPrefix = "http://www.ease-crc.org/ont/SOMA_DFL.owl#"
     n = len(dflPrefix)
     objNames = getObjectNamesFromSemanticMap(semanticMap)
-    semanticReports = {k: {"SOMA_DFL": {"dfl:"+_contract(n, v) for v in getObjectTypesFromSemanticMap(k, semanticMap)
-                              if v.startswith(dflPrefix)}} 
+    semanticReports = {k: [{"SOMA_DFL": "dfl:"+_contract(n, v)} for v in getObjectTypesFromSemanticMap(k, semanticMap)
+                              if v.startswith(dflPrefix)] 
                          for k in objNames}
     return semanticReports
 
@@ -98,7 +98,7 @@ def whatPlausibleDFLClassesForObject(oname: str, semanticReports: dict):
 def whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports: dict, whiteList=None):
     if whiteList is None:
         whiteList = getObjectNamesFromSemanticMap(semanticMap)
-    return {x: whatPlausibleDFLClassesForObject(oname, semanticReports) for x in whiteList}
+    return {x: whatPlausibleDFLClassesForObject(x, semanticReports) for x in whiteList}
 
 #    \item Which objects do I need for breakfast?
 def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
@@ -183,7 +183,7 @@ def whereToPlaceItemsForMeal(meal: str, semanticMap, semanticReports: dict):
         plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
         # Get meal locations
         #     note: for now we hack a single disposition for all meals to be served at the same place.
-        mealLocations = set(sr.dl.whatObjectsHaveDisposition("dfl:serve.v.wn.consumption..concrete.Location"))
+        mealLocations = set(sr.dl.whatHasDisposition("dfl:serve.v.wn.consumption..concrete.Location"))
         # Get all plausible found types
         foundTypes = itertools.chain.from_iterable(plausibleClassMap.values())
         # Get all object types, from those found, which are of items where meals are served
