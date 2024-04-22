@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 # dlquery functions are accessible through semrep: sr.dl.*
 import dfl.semrep as sr
 import itertools
+import owlready2
+import rdflib
 
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([8, -5.35, 0],[0,0,1,0]))
@@ -34,9 +36,47 @@ apartment_desig = BelieveObject(names=["apartment"])
 
 # TODOs
 # - FN_getObjectParts(objName, semanticMap)
-# - FN_getObjectNames(semanticMap)
-# - DFL: handles as parts of drawers, doors ...
-# - DFL: storage.v.wn.possession..place use matches for tableware, perishables, frozen food
+
+def prepareSemanticMap(sceneGraphOwlFile):
+    onto = owlready2.get_ontology("file://"+sceneGraphOwlFile).load()
+    # The owlready2 SPARQL engine is quite buggy, prefer to use RDFLib's instead
+    semanticMap = owlready2.default_world.as_rdflib_graph()
+    return semanticMap
+
+def getObjectNamesFromSemanticMap(semanticMap):
+    r = list(semanticMap.query("""
+            SELECT DISTINCT ?p WHERE {
+                ?p <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://ease-crc.org/ont/USD.owl#Prim>.
+            }"""))
+    return [str(x[0]) for x in r]
+
+def getObjectTypesFromSemanticMap(objName, semanticMap):
+    r = list(semanticMap.query("""
+            SELECT DISTINCT ?p WHERE {
+                <%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?p.
+            }""" % (objName)))
+    return [str(x[0]) for x in r]
+
+def getObjectPartsFromSemanticMap(objName, semanticMap):
+    r = list(semanticMap.query("""
+            SELECT DISTINCT ?p WHERE {
+                <%s> <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#hasPart> ?p.
+            }""" % (objName)))
+    return [str(x[0]) for x in r]
+
+# Obtain semantic reports for all objects in a scene
+def initializeSemanticReports(semanticMap):
+    def _contract(n, s):
+        return s[n:]
+    # Assumes semantic labelling was done already, and all we need to do now is
+    #     to retrieve the SOMA_DFL types of the various objects
+    dflPrefix = "http://www.ease-crc.org/ont/SOMA_DFL.owl#"
+    n = len(dflPrefix)
+    objNames = getObjectNamesFromSemanticMap(semanticMap)
+    semanticReports = {k: {"SOMA_DFL": {"dfl:"+_contract(n, v) for v in getObjectTypesFromSemanticMap(k, semanticMap)
+                              if v.startswith(dflPrefix)}} 
+                         for k in objNames}
+    return semanticReports
 
 # Sanity ceck: concatenate a number of lists, removing repeated elements.
 def sanityCheckListOfUniques(*lists):
@@ -57,7 +97,7 @@ def whatPlausibleDFLClassesForObject(oname: str, semanticReports: dict):
 
 def whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports: dict, whiteList=None):
     if whiteList is None:
-        whiteList = FN_getObjectNames(semanticMap)
+        whiteList = getObjectNamesFromSemanticMap(semanticMap)
     return {x: whatPlausibleDFLClassesForObject(oname, semanticReports) for x in whiteList}
 
 #    \item Which objects do I need for breakfast?
