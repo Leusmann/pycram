@@ -9,6 +9,11 @@ import pycram.external_interfaces.knowrob as knowrob
 import pycram.bullet_world_reasoning as btr
 import matplotlib.pyplot as plt
 
+# semrep imports dlquery as dl, and builds a cache for it.
+# Therefore, will not import dlquery again, to avoid building another cache.
+# dlquery functions are accessible through semrep: sr.dl.*
+import dfl.semrep as sr
+import itertools
 
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([8, -5.35, 0],[0,0,1,0]))
@@ -27,6 +32,124 @@ pick_pose = Pose([7, -5.2, 1])
 robot_desig = BelieveObject(names=["pr2"])
 apartment_desig = BelieveObject(names=["apartment"])
 
+# TODOs
+# - FN_getObjectParts(objName, semanticMap)
+# - FN_getObjectNames(semanticMap)
+# - DFL: handles as parts of drawers, doors ...
+# - DFL: storage.v.wn.possession..place use matches for tableware, perishables, frozen food
+
+# Sanity ceck: concatenate a number of lists, removing repeated elements.
+def sanityCheckListOfUniques(*lists):
+    aux = set()
+    retq = [(x,aux.add(x)) for x in itertools.chain.from_iterable(lists) if x not in aux]
+    return [x[0] for x in retq]
+    
+def getObjectPartNamesAndSelf(objName: str, semanticMap):
+    return set(FN_getObjectParts(objName, semanticMap)).union([objName])
+
+# we assume we have only object names as keys for semantic reports
+#     this is true currently as the USD does not record types.
+# even when we will use type information when doing a semantic report,
+#     it is easy to replace a report for type T with a list of identical reports
+#     for each x that is an instance of T
+def whatPlausibleDFLClassesForObject(oname: str, semanticReports: dict):
+    return [x['SOMA_DFL'] for x in semanticReports.get(oname, []) if 'SOMA_DFL' in x]
+
+def whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports: dict, whiteList=None):
+    if whiteList is None:
+        whiteList = FN_getObjectNames(semanticMap)
+    return {x: whatPlausibleDFLClassesForObject(oname, semanticReports) for x in whiteList}
+
+#    \item Which objects do I need for breakfast?
+def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
+    def _isOrContains(targetConcepts, candidateConcepts):
+        return [x for x in candidateConcepts if (x in targetConcepts) or 
+                                                targetConcepts.intersection(sr.dl.whatPartTypesDoesObjectHave(x))]
+    # currently, only breakfast implemented
+    meal = meal.lower().strip()
+    if meal in {'breakfast', 'break fast', 'morning meal'}:
+        # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
+        plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
+        # Find classes of foods believed to be breakfast foods.
+        breakfastFoods = set(sr.dl.whatSubclases('dfl:breakfast_food.n.wn.food'))
+        # Find all objects in the scene that plausibly are of, or contain, a breakfast food type.
+        plausibleItems = [x for x,v in plausibleClassMap.items() if _isOrContains(breakfastFoods, v)]
+        # Make a set of breakfast food types that we actually might have in the scene
+        foundBreakfastFoodTypes = breakfastFoods.intersection(itertools.chain.from_iterable(plausibleClassMap.values()))
+        # Find all classes of objects believed to be appropriate tools to serve food of the found types.
+        plausibleUtensilTypes = itertools.chain.from_iterable(
+                                    [sr.dl.whatToolsCanPerformTaskOnObject('dfl:serve.v.wn.consume..concrete', x) for
+                                        x in foundBreakfastFoodTypes])
+        plausibleUtensilTypes = set(plausibleUtensilTypes)
+        # Find all objects in the scene that plausibly are of the appropriate utensil types.
+        plausibleUtensils = [x,v in plausibleClassMap.items() if plausibleUtensilTypes.intersection(v)]
+        # Sanity ceck: make sure nothing is returned twice. In case we need a list of items first, then utensils,
+        #     we do not just call set here.
+        return sanityCheckListOfUniques(plausibleItems,plausibleUtensils)
+    return []
+
+#    \item Which objects contain something to drink?
+def whichItemsContainDrinks(semanticMap, semanticReports: dict):
+    # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
+    plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
+    # Find classes of entities believed to be drinks. 
+    beverages = set(sr.dl.whatSubclases('dfl:beverage.n.wn.food'))
+    # Find classes of entities believed to be containers.
+    containersForDrinks = set([x for x in sr.dl.whatSubclases('dfl:container.n.wn.artifact') if
+                                  beverages.intersection(sr.dl.whatPartTypesDoesObjectHave(x))])
+    # Make a list of all items in the scene that are beverages
+    plausibleDrinks = [x for x,v in plausibleClassMap.items() if beverages.intersection(v)]
+    # Make a list of all items that are containers which may have drinks in them
+    plausibleDrinkContainers = [x for x,v in plausibleClassMap.items() if containersForDrinks.intersection(v)]
+    # Sanity ceck: make sure nothing is returned twice. In case we need a list of items first, then utensils,
+    #     we do not just call set here.
+    return sanityCheckListOfUniques(plausibleDrinks, plausibleDrinkContainers)
+
+#    \item Where do we expect the Spoon to be?
+def whichLocationsMayHaveItem(objName: str, semanticMap, semanticReports: dict):
+    # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
+    plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
+    # Find the plausible types of objName
+    itemTypes = plausibleClassMap.get(objName, [])
+    # Find types of objects that could plausibly store objName
+    storages = itertools.chain.from_iterable(
+                   [sr.dl.whatToolsCanPerformTaskOnObject("store.v.wn.possession..place", x)
+                       for x in itemTypes])
+    storages = set(storages)
+    # Find objects in scene that can plausibly store item
+    return [x for x,v in plausibleClassMap.items() if storages.intersection(v)]
+
+#    \item What can I grasp on the cabinet to open it?
+def whichPartsOfObjectAreGraspable(objName: str, semanticMap, semanticReports: dict):
+    # Find all part names of objName that are in the scene, and the object name itself, as a set
+    objPartNames = getObjectPartNamesAndSelf(objName, semanticMap)
+    # Find all plausible object classes for the identified object names
+    #     Note: here, plausibleClassMap is not for the entire scene but only for the objPartNames subset
+    plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports, whiteList=objPartNames)
+    # Get all plausible types
+    plausibleTypes = set(itertools.chain.from_iterable(plausibleClassMap.values()))
+    # Get all plausible types of objects with the graspable disposition
+    plausibleHandleTypes = [x for x in plausibleTypes if sr.dl.doesObjectHaveDisposition("hold.v.wn.contact..grasp")]
+    # Get all object names that are plausibly handles
+    return [x for x,v in plausibleClassMap.items() if plausibleHandleTypes.intersection(v)]
+
+#    \item Where should I put the utensils for breakfast?
+def whereToPlaceItemsForMeal(meal: str, semanticMap, semanticReports: dict)
+    ## currently, all meals go to the same places
+    #meal = meal.lower().strip()
+    #if meal in {'breakfast', 'break fast', 'morning meal'}:
+    if True:
+        # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
+        plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
+        # Get meal locations
+        #     note: for now we hack a single disposition for all meals to be served at the same place.
+        mealLocations = set(sr.dl.whatObjectsHaveDisposition("dfl:serve.v.wn.consumption..concrete.Location"))
+        # Get all plausible found types
+        foundTypes = itertools.chain.from_iterable(plausibleClassMap.values())
+        # Get all object types, from those found, which are of items where meals are served
+        foundMealLocations = mealLocations.intersection(foundTypes)
+        return [x for x,v in plausibleClassMap.items() if foundMealLocations.intersection(v)]
+    return []
 
 @with_simulated_robot
 def move_and_detect(obj_type):
