@@ -111,7 +111,7 @@ def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
         # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
         plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
         # Find classes of foods believed to be breakfast foods.
-        breakfastFoods = set(sr.dl.whatSubclases('dfl:breakfast_food.n.wn.food'))
+        breakfastFoods = set(sr.dl.whatSubclasses('dfl:breakfast_food.n.wn.food'))
         # Find all objects in the scene that plausibly are of, or contain, a breakfast food type.
         plausibleItems = [x for x,v in plausibleClassMap.items() if _isOrContains(breakfastFoods, v)]
         # Make a set of breakfast food types that we actually might have in the scene
