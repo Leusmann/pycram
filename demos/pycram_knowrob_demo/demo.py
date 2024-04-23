@@ -100,6 +100,16 @@ def whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports: dict, whi
         whiteList = getObjectNamesFromSemanticMap(semanticMap)
     return {x: whatPlausibleDFLClassesForObject(x, semanticReports) for x in whiteList}
 
+def whichItemsToServeItemWith(oName: str, semanticMap, semanticReports: dict):
+    # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
+    plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
+    partTypes = set(plausibleClassMap[oName])
+    partTypes = partTypes.union(itertools.chain.from_iterable([sr.dl.whatPartTypesDoesObjectHave(x) for x in partTypes]))
+    servingTools = set(itertools.chain.from_iterable(
+                           [sr.dl.whatToolsCanPerformTaskOnObject("dfl:serve.v.wn.consumption..concrete", x) 
+                               for x in partTypes]))
+    return [x for x,v in plausibleClassMap.items() if servingTools.intersection(v)]
+
 #    \item Which objects do I need for breakfast?
 def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
     def _isOrContains(targetConcepts, candidateConcepts):
@@ -114,15 +124,21 @@ def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
         breakfastFoods = set(sr.dl.whatSubclasses('dfl:breakfast_food.n.wn.food'))
         # Find all objects in the scene that plausibly are of, or contain, a breakfast food type.
         plausibleItems = [x for x,v in plausibleClassMap.items() if _isOrContains(breakfastFoods, v)]
+        '''
         # Make a set of breakfast food types that we actually might have in the scene
-        foundBreakfastFoodTypes = breakfastFoods.intersection(itertools.chain.from_iterable(plausibleClassMap.values()))
+        foundTypes = set(itertools.chain.from_iterable(plausibleClassMap.values()))
+        foundParts = itertools.chain.from_iterable([sr.dl.whatPartTypesDoesObjectHave(x) for x in foundTypes])
+        foundBreakfastFoodTypes = breakfastFoods.intersection(foundTypes.union(foundParts))
         # Find all classes of objects believed to be appropriate tools to serve food of the found types.
         plausibleUtensilTypes = itertools.chain.from_iterable(
-                                    [sr.dl.whatToolsCanPerformTaskOnObject('dfl:serve.v.wn.consume..concrete', x) for
-                                        x in foundBreakfastFoodTypes])
+                                    [sr.dl.whatToolsCanPerformTaskOnObject('dfl:serve.v.wn.consumption..concrete', x)
+                                        for x in foundBreakfastFoodTypes])
         plausibleUtensilTypes = set(plausibleUtensilTypes)
         # Find all objects in the scene that plausibly are of the appropriate utensil types.
         plausibleUtensils = [x for x,v in plausibleClassMap.items() if plausibleUtensilTypes.intersection(v)]
+        '''
+        plausibleUtensils = list(itertools.chain.from_iterable([whichItemsToServeItemWith(x, semanticMap, semanticReports)
+                                                                   for x in plausibleItems]))
         # Sanity ceck: make sure nothing is returned twice. In case we need a list of items first, then utensils,
         #     we do not just call set here.
         return sanityCheckListOfUniques(plausibleItems,plausibleUtensils)
