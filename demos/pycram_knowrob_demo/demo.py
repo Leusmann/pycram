@@ -10,6 +10,16 @@ import pycram.bullet_world_reasoning as btr
 import matplotlib.pyplot as plt
 
 
+def check_for_collisions_mutlible_list(inItem,inList,new_location):
+    if inItem.name=="cerial":
+        print(33*'%')
+    for bob in inList:
+        if bob.name==inItem.name:
+            continue
+        if(btr.pospection_contact(inItem, bob, new_location.pose)):
+            return True
+    return False
+
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([8, -5.35, 0],[0,0,1,0]))
 apartment = Object("apartment", ObjectType.ENVIRONMENT, "Modified_ApartmentECAI.urdf")
@@ -53,11 +63,15 @@ with simulated_robot:
 
         drop_location_modified = next(drop_location)
         drop_location_modified.pose.position.z += .5
-        while btr.pospection_contact(item, apartment, drop_location_modified.pose):
+
+        while check_for_collisions_mutlible_list(item, objects_to_move,drop_location_modified):
             drop_location_modified = next(drop_location)
-            drop_location_modified.pose.position.z += .7
+            drop_location_modified.pose.position.z += .5
 
         TransportAction(item_desig,["left"],[drop_location_modified.pose]).resolve().perform()
+
+    print(btr.contact(bowl,cerial))
+    print(btr.contact(cerial, bowl))
 
     NavigateAction(target_locations=[Pose([8, -5.35, 0],[0,0,1,0])]).resolve().perform()
     # Finding and navigating to the drawer holding the spoon
@@ -101,3 +115,6 @@ with simulated_robot:
     PlaceAction(spoon_desig, [spoon_target_pose], [pickup_arm]).resolve().perform()
 
     ParkArmsAction([Arms.BOTH]).resolve().perform()
+
+
+
