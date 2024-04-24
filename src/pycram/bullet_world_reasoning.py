@@ -1,3 +1,5 @@
+import time
+
 import pybullet as p
 import itertools
 import numpy as np
@@ -128,8 +130,11 @@ def contact(object1: Object,
     :param return_links: If the respective links on the objects that are in contact should be returned.
     :return: True if the two objects are in contact False else. If links should be returned a list of links in contact
     """
-
     with Use_shadow_world():
+        if(object1.name=="cerial"):
+            print("prospectiveObject:{} prospectivePose:{}".format(object1.name, object1.pose.position))
+            print(
+                "check_withObject:{} check_withPose:{}".format(object2.name, object2.pose.position))
         shadow_obj1 = BulletWorld.current_bullet_world.get_shadow_object(object1)
         shadow_obj2 = BulletWorld.current_bullet_world.get_shadow_object(object2)
         p.performCollisionDetection(BulletWorld.current_bullet_world.client_id)
@@ -143,6 +148,9 @@ def contact(object1: Object,
             return con_points != (), contact_links
 
         else:
+            if con_points!=() or object1.name=="cerial":
+                print(5*'.')
+                print("contact: Object1:{} Object2:{} contact_points:{}".format(shadow_obj1.name, shadow_obj2.name,con_points))
             return con_points != ()
 
 def pospection_contact(object_to_prospect,objects_to_check_with,new_pose):
@@ -150,6 +158,9 @@ def pospection_contact(object_to_prospect,objects_to_check_with,new_pose):
     shadow_objects_to_check=BulletWorld.current_bullet_world.get_shadow_object(objects_to_check_with)
     prospective_shadow_object.set_pose(new_pose)
     with Use_shadow_world():
+        tmp=contact(prospective_shadow_object, shadow_objects_to_check)
+        print(20*'$')
+        # print("object_to_prospect:{} object_to_check_with:{} tmp:{} new_pose:{}".format(object_to_prospect.name, objects_to_check_with.name, tmp, new_pose.position))
         return contact(prospective_shadow_object,shadow_objects_to_check)
 
 
