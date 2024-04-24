@@ -49,9 +49,6 @@ pick_pose = Pose([7, -5.2, 1])
 robot_desig = BelieveObject(names=["pr2"])
 apartment_desig = BelieveObject(names=["apartment"])
 
-# TODOs
-# - debugging, ensuring sensible results of queries
-
 def prepareSemanticMap(sceneGraphOwlFile):
     onto = owlready2.get_ontology("file://"+sceneGraphOwlFile).load()
     # The owlready2 SPARQL engine is quite buggy, prefer to use RDFLib's instead
