@@ -5,6 +5,7 @@ from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
 from pycram.process_module import simulated_robot, with_simulated_robot
 from pycram.enums import ObjectType
+from pycram.plan_failures import PerceptionObjectNotFound
 import pycram.external_interfaces.knowrob as knowrob
 import pycram.bullet_world_reasoning as btr
 import matplotlib.pyplot as plt
@@ -25,9 +26,23 @@ milk = Object("milk", ObjectType.MILK, "MilkBox.stl", pose=Pose([6.85, -4.95, 0.
 bowl = Object("bowl", ObjectType.BOWL, "SmallBowl.stl", pose=Pose([7.05, -4.92, 0.90],[0,0,1,0]), color=[1, 1, 0, 1])
 cerial = Object("cerial", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([6.85, -5.47, 0.97]),
                 color=[0, 1, 0, 1])
+cup = Object("cup", ObjectType.JEROEN_CUP, "Cup.stl", pose=Pose([7.35, -4.95, 0.94],[0,0,1,0]), color=[1,1,0,1])
 spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([7.13, -5.33, 0.75]), color=[0, 0, 1, 1])
-apartment.attach(spoon, 'SM_Kitchen_09_Drawer_01')
+USDPrefix = "https://ease-crc.org/ont/USD.owl#"
+drawerName = "SM_Kitchen_09_Drawer_01"
+USDDrawerName = USDPrefix+drawerName
+apartment.attach(spoon, drawerName)
 
+# TODO: This should be constructed automatically from something like the semantic map.
+#     For now, the bullet scene construction cannot use the scene graph directly.
+name2ObjectMap = {
+    "https://ease-crc.org/ont/USD.owl#SM_MilkBox": milk,
+    "https://ease-crc.org/ont/USD.owl#SM_SmallBowl": bowl,
+    "https://ease-crc.org/ont/USD.owl#SM_CerealBox": cerial,
+    "https://ease-crc.org/ont/USD.owl#SM_Spoon": spoon,
+    "https://ease-crc.org/ont/USD.owl#SM_Cup": cup,
+    USDDrawerName: drawer
+}
 
 pick_pose = Pose([7, -5.2, 1])
 
@@ -103,8 +118,10 @@ def whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports: dict, whi
 def whichItemsToServeItemWith(oName: str, semanticMap, semanticReports: dict):
     # Find all plausible object classes (classes in the semantic reports) for all objects in the scene.
     plausibleClassMap = whatPlausibleDFLClassesForAllObjects(semanticMap, semanticReports)
+    # Find all object part types (including types for the whole object)
     partTypes = set(plausibleClassMap[oName])
     partTypes = partTypes.union(itertools.chain.from_iterable([sr.dl.whatPartTypesDoesObjectHave(x) for x in partTypes]))
+    # Find all tools T such that a use match (serve,T,P) exists for some part P of the object
     servingTools = set(itertools.chain.from_iterable(
                            [sr.dl.whatToolsCanPerformTaskOnObject("dfl:serve.v.wn.consumption..concrete", x) 
                                for x in partTypes]))
@@ -124,19 +141,6 @@ def whichItemsForMeal(meal: str, semanticMap, semanticReports: dict):
         breakfastFoods = set(sr.dl.whatSubclasses('dfl:breakfast_food.n.wn.food'))
         # Find all objects in the scene that plausibly are of, or contain, a breakfast food type.
         plausibleItems = [x for x,v in plausibleClassMap.items() if _isOrContains(breakfastFoods, v)]
-        '''
-        # Make a set of breakfast food types that we actually might have in the scene
-        foundTypes = set(itertools.chain.from_iterable(plausibleClassMap.values()))
-        foundParts = itertools.chain.from_iterable([sr.dl.whatPartTypesDoesObjectHave(x) for x in foundTypes])
-        foundBreakfastFoodTypes = breakfastFoods.intersection(foundTypes.union(foundParts))
-        # Find all classes of objects believed to be appropriate tools to serve food of the found types.
-        plausibleUtensilTypes = itertools.chain.from_iterable(
-                                    [sr.dl.whatToolsCanPerformTaskOnObject('dfl:serve.v.wn.consumption..concrete', x)
-                                        for x in foundBreakfastFoodTypes])
-        plausibleUtensilTypes = set(plausibleUtensilTypes)
-        # Find all objects in the scene that plausibly are of the appropriate utensil types.
-        plausibleUtensils = [x for x,v in plausibleClassMap.items() if plausibleUtensilTypes.intersection(v)]
-        '''
         plausibleUtensils = list(itertools.chain.from_iterable([whichItemsToServeItemWith(x, semanticMap, semanticReports)
                                                                    for x in plausibleItems]))
         # Sanity ceck: make sure nothing is returned twice. In case we need a list of items first, then utensils,
@@ -212,76 +216,95 @@ def whereToPlaceItemsForMeal(meal: str, semanticMap, semanticReports: dict):
 @with_simulated_robot
 def move_and_detect(obj_type):
     NavigateAction(target_locations=[Pose([8, -5.35, 0],[0,0,1,0])]).resolve().perform()
-
     LookAtAction(targets=[pick_pose]).resolve().perform()
-
     object_desig = DetectAction(BelieveObject(types=[obj_type])).resolve().perform()
-
     return object_desig
 
 with simulated_robot:
+    # Get the robot into a standard pose.
     ParkArmsAction([Arms.BOTH]).resolve().perform()
-
     MoveTorsoAction([0.25]).resolve().perform()
 
+    # Initialize all the fancy reasoning stuff.
     semanticMap = prepareSemanticMap(sceneGraphOwlFile)
     semanticReports = initializeSemanticReports(semanticMap)
 
-    # Not sure how to generalize maybe list will items I need to move?
-    # There are semnatic costmaps which could give me pose for items
-    objects_to_move=[milk,bowl,cerial]
+    # The robot needs to prepare a place to serve breakfast. What should it bring?
+    #   the following lines retrieve object names from the semantic map
+    #   CQ1, CQx: what to serve at meal, and what to serve it with 
+    foodAndUtensilsForBreakfast = whichItemsForMeal("breakfast", semanticMap, semanticReports)
+    #   CQ2: what is there to drink
+    drinks = whichItemsContainDrinks(semanticMap, semanticReports)
+    #   CQx: what to serve something with
+    toServeDrinksIn = set(itertools.chain.from_iterable([whichItemsToServeItemWith(x, semanticMap, semanticReports)
+                                                            for x in drinks]))
+    #   associate retrieved names to bullet world objects, where possible
+    namesToBring = set(foodAndUtensilsForBreakfast).union(drinks).union(toServeDrinksIn)    
+    objects_to_move=[(x,name2ObjectMap[x]) for x in namesToBring if x in name2ObjectMap]
 
-    drop_location=iter(SemanticCostmapLocation(urdf_link_name="SM_DiningTable", part_of=apartment_desig.resolve()))
-    for item in objects_to_move:
-        item_desig=move_and_detect(item.type)
-
-        drop_location_modified = next(drop_location)
-        drop_location_modified.pose.position.z += .5
-        while btr.pospection_contact(item, apartment, drop_location_modified.pose):
+    # CQ5: where to serve the meal?
+    locations = whereToPlaceItemsForMeal("breakfast", semanticMap, semanticReports)
+    # We will assume we retrieved something, so just choose one of the retrieved locations
+    #     (if we didn't find any location, this is a place where an error should be signalled)
+    for location in locations:
+        break
+    # PyCRAM does not need the USD.owl prefix.
+    urdf_link_name = location[len(USDPrefix)+1:]
+    drop_location=iter(SemanticCostmapLocation(urdf_link_name=urdf_link_name, part_of=apartment_desig.resolve()))
+    for name, item in objects_to_move:
+        try:
+            item_desig=move_and_detect(item.type)
+            found = True
+        except PerceptionObjectNotFound:
+            found = False
+        if found:
             drop_location_modified = next(drop_location)
-            drop_location_modified.pose.position.z += .7
-
-        TransportAction(item_desig,["left"],[drop_location_modified.pose]).resolve().perform()
-
-    NavigateAction(target_locations=[Pose([8, -5.35, 0],[0,0,1,0])]).resolve().perform()
-    # Finding and navigating to the drawer holding the spoon
-    handle_desig = ObjectPart(names=["SM_Kitchen_Handle15"], part_of=apartment_desig.resolve())
-    drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
+            drop_location_modified.pose.position.z += .5
+            while btr.pospection_contact(item, apartment, drop_location_modified.pose):
+                drop_location_modified = next(drop_location)
+                drop_location_modified.pose.position.z += .7
+            TransportAction(item_desig,["left"],[drop_location_modified.pose]).resolve().perform()
+        else:
+            # CQ3: where to search for an item?
+            plausibleLocations = whichLocationsMayHaveItem(name, semanticMap, semanticReports)
+            # There are many drawers, and in principle the robot should search all of them.
+            #   to get the plan to finish faster, we will just jump to the correct drawer -- assuming it has
+            #   been returned by our reasoner.
+            if USDDrawerName in plausibleLocations:
+                # Finding and navigating to the drawer holding the item
+                NavigateAction(target_locations=[Pose([8, -5.35, 0],[0,0,1,0])]).resolve().perform()
+                # CQ4: where to grasp an object?
+                whereToGrasp = whichPartsOfObjectAreGraspable(USDDrawerName, semanticMap, semanticReports)
+                # The drawer itself will be returned as a graspable thing -- which it is -- but we will ignore that
+                whereToGrasp = [x for x in whereToGrasp if USDDrawerName != x]
+                # We assume we got a result, else we should signal an error
+                #     as before, PyCRAM does not need the USD prefix, so remove it from the name
+                handle_desig = ObjectPart(names=[x[len(USDPrefix)+1:] for x in whereToGrasp], part_of=apartment_desig.resolve())
+                drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
                                         robot_desig=robot_desig.resolve()).resolve()
-
-    NavigateAction([drawer_open_loc.pose]).resolve().perform()
-
-    # OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
-    OpenAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
-    spoon.detach(apartment)
-
-    # Detect and pickup the spoon
-    LookAtAction([apartment.get_link_pose("SM_Kitchen_Handle15")]).resolve().perform()
-
-    spoon_desig = DetectAction(BelieveObject(types=[ObjectType.SPOON])).resolve().perform()
-
-    pickup_arm = "right"# if drawer_open_loc.arms[0] == "right" else "right"
-    PickUpAction(spoon_desig, [pickup_arm], ["top"]).resolve().perform()
-
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
-
-    close_loc = drawer_open_loc.pose
-    # close_loc.position.y -= 0.2
-    NavigateAction([close_loc]).resolve().perform()
-
-    # CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
-    CloseAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
-
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
-
-    MoveTorsoAction([0.15]).resolve().perform()
-
-    # Find a pose to place the spoon, move and then place it
-    spoon_target_pose = Pose([3.42, -6.88, 0.80], [0, 0, 1, 1])
-    placing_loc = CostmapLocation(target=spoon_target_pose, reachable_for=robot_desig.resolve()).resolve()
-
-    NavigateAction([placing_loc.pose]).resolve().perform()
-
-    PlaceAction(spoon_desig, [spoon_target_pose], [pickup_arm]).resolve().perform()
-
-    ParkArmsAction([Arms.BOTH]).resolve().perform()
+                NavigateAction([drawer_open_loc.pose]).resolve().perform()
+                # OpenAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
+                OpenAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
+                item.detach(apartment)
+                # Detect and pickup the item
+                LookAtAction([apartment.get_link_pose(whereToGrasp[0][len(USDPrefix)+1:])]).resolve().perform()
+                # TODO: item.type used to be ObjectType.SPOON, but this is not general enough
+                #     will this replacement work? If item is the spoon (it will be), is item.type=ObjectType.SPOON?
+                item_desig = DetectAction(BelieveObject(types=[item.type])).resolve().perform()
+                pickup_arm = "right"# if drawer_open_loc.arms[0] == "right" else "right"
+                PickUpAction(item_desig, [pickup_arm], ["top"]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                close_loc = drawer_open_loc.pose
+                # close_loc.position.y -= 0.2
+                NavigateAction([close_loc]).resolve().perform()
+                # CloseAction(object_designator_description=handle_desig, arms=[drawer_open_loc.arms[0]]).resolve().perform()
+                CloseAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
+                MoveTorsoAction([0.15]).resolve().perform()
+                # Find a pose to place the item, move and then place it
+                # TODO: this should be generated automatically -- is it possible to generate a pose from the location iterator?
+                item_target_pose = Pose([3.42, -6.88, 0.80], [0, 0, 1, 1])
+                placing_loc = CostmapLocation(target=item_target_pose, reachable_for=robot_desig.resolve()).resolve()
+                NavigateAction([placing_loc.pose]).resolve().perform()
+                PlaceAction(item_desig, [item_target_pose], [pickup_arm]).resolve().perform()
+                ParkArmsAction([Arms.BOTH]).resolve().perform()
