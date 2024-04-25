@@ -70,9 +70,6 @@ with simulated_robot:
 
         TransportAction(item_desig,["left"],[drop_location_modified.pose]).resolve().perform()
 
-    print(btr.contact(bowl,cerial))
-    print(btr.contact(cerial, bowl))
-
     NavigateAction(target_locations=[Pose([8, -5.35, 0],[0,0,1,0])]).resolve().perform()
     # Finding and navigating to the drawer holding the spoon
     handle_desig = ObjectPart(names=["SM_Kitchen_Handle15"], part_of=apartment_desig.resolve())
