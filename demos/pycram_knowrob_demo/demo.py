@@ -18,6 +18,9 @@ import itertools
 import owlready2
 import rdflib
 
+sceneGraphOwlFile = None
+
+
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([8, -5.35, 0],[0,0,1,0]))
 apartment = Object("apartment", ObjectType.ENVIRONMENT, "Modified_ApartmentECAI.urdf")
@@ -41,7 +44,6 @@ name2ObjectMap = {
     "https://ease-crc.org/ont/USD.owl#SM_CerealBox": cerial,
     "https://ease-crc.org/ont/USD.owl#SM_Spoon": spoon,
     "https://ease-crc.org/ont/USD.owl#SM_Cup": cup,
-    USDDrawerName: drawer
 }
 
 pick_pose = Pose([7, -5.2, 1])
@@ -246,7 +248,7 @@ with simulated_robot:
     for location in locations:
         break
     # PyCRAM does not need the USD.owl prefix.
-    urdf_link_name = location[len(USDPrefix)+1:]
+    urdf_link_name = location[len(USDPrefix):]
     drop_location=iter(SemanticCostmapLocation(urdf_link_name=urdf_link_name, part_of=apartment_desig.resolve()))
     for name, item in objects_to_move:
         try:
@@ -276,7 +278,7 @@ with simulated_robot:
                 whereToGrasp = [x for x in whereToGrasp if USDDrawerName != x]
                 # We assume we got a result, else we should signal an error
                 #     as before, PyCRAM does not need the USD prefix, so remove it from the name
-                handle_desig = ObjectPart(names=[x[len(USDPrefix)+1:] for x in whereToGrasp], part_of=apartment_desig.resolve())
+                handle_desig = ObjectPart(names=[x[len(USDPrefix):] for x in whereToGrasp], part_of=apartment_desig.resolve())
                 drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
                                         robot_desig=robot_desig.resolve()).resolve()
                 NavigateAction([drawer_open_loc.pose]).resolve().perform()
@@ -284,7 +286,7 @@ with simulated_robot:
                 OpenAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
                 item.detach(apartment)
                 # Detect and pickup the item
-                LookAtAction([apartment.get_link_pose(whereToGrasp[0][len(USDPrefix)+1:])]).resolve().perform()
+                LookAtAction([apartment.get_link_pose(whereToGrasp[0][len(USDPrefix):])]).resolve().perform()
                 # TODO: item.type used to be ObjectType.SPOON, but this is not general enough
                 #     will this replacement work? If item is the spoon (it will be), is item.type=ObjectType.SPOON?
                 item_desig = DetectAction(BelieveObject(types=[item.type])).resolve().perform()
