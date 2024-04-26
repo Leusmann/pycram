@@ -3,7 +3,7 @@ from pycram.designators.location_designator import *
 from pycram.designators.object_designator import *
 from pycram.pose import Pose
 from pycram.bullet_world import BulletWorld, Object
-from pycram.process_module import simulated_robot, with_simulated_robot
+from pycram.process_module import simulated_robot, with_simulated_robot,ProcessModule
 from pycram.enums import ObjectType
 from pycram.plan_failures import PerceptionObjectNotFound
 import pycram.external_interfaces.knowrob as knowrob
@@ -21,7 +21,7 @@ import rdflib
 def check_for_collisions_mutlible_list(inItem,inList,new_location):
     if inItem.name=="cerial":
         print(33*'%')
-    for bob in inList:
+    for iristring,bob in inList:
         if bob.name==inItem.name:
             continue
         if(btr.pospection_contact(inItem, bob, new_location.pose)):
@@ -29,17 +29,20 @@ def check_for_collisions_mutlible_list(inItem,inList,new_location):
     return False
 
 
-sceneGraphOwlFile = None
+# sceneGraphOwlFile = "/home/nleusmann/catkin_ws/src/pycram/src/knowledge/ApartmentECAI.owl"
+sceneGraphOwlFile = "/home/nleusmann/.virtualenvs/pycram/lib/python3.8/owl/ApartmentECAI.owl"
 
 world = BulletWorld()
 robot = Object("pr2", ObjectType.ROBOT, "pr2.urdf", pose=Pose([8, -5.35, 0],[0,0,1,0]))
 apartment = Object("apartment", ObjectType.ENVIRONMENT, "Modified_ApartmentECAI.urdf")
 
+# ProcessModule.execution_delay=False
+
 milk = Object("milk", ObjectType.MILK, "MilkBox.stl", pose=Pose([6.85, -4.95, 0.97]), color=[1, 0, 0, 1])
 bowl = Object("bowl", ObjectType.BOWL, "SmallBowl.stl", pose=Pose([7.05, -4.92, 0.90],[0,0,1,0]), color=[1, 1, 0, 1])
 cerial = Object("cerial", ObjectType.BREAKFAST_CEREAL, "breakfast_cereal.stl", pose=Pose([6.85, -5.47, 0.97]),
                 color=[0, 1, 0, 1])
-cup = Object("cup", ObjectType.JEROEN_CUP, "Cup.stl", pose=Pose([7.35, -4.95, 0.94],[0,0,1,0]), color=[1,1,0,1])
+cup = Object("cup", ObjectType.JEROEN_CUP, "Cup.stl", pose=Pose([7.02, -5.27, 0.90],[0,0,1,0]), color=[1,1,0,1])
 spoon = Object("spoon", ObjectType.SPOON, "spoon.stl", pose=Pose([7.13, -5.33, 0.75]), color=[0, 0, 1, 1])
 USDPrefix = "https://ease-crc.org/ont/USD.owl#"
 drawerName = "SM_Kitchen_09_Drawer_01"
@@ -53,8 +56,7 @@ name2ObjectMap = {
     "https://ease-crc.org/ont/USD.owl#SM_SmallBowl": bowl,
     "https://ease-crc.org/ont/USD.owl#SM_CerealBox": cerial,
     "https://ease-crc.org/ont/USD.owl#SM_Spoon": spoon,
-    "https://ease-crc.org/ont/USD.owl#SM_Cup": cup,
-    USDDrawerName: drawer
+    "https://ease-crc.org/ont/USD.owl#SM_Cup": cup
 }
 
 pick_pose = Pose([7, -5.2, 1])
@@ -259,7 +261,7 @@ with simulated_robot:
     for location in locations:
         break
     # PyCRAM does not need the USD.owl prefix.
-    urdf_link_name = location[len(USDPrefix)+1:]
+    urdf_link_name = location[len(USDPrefix):]
     drop_location=iter(SemanticCostmapLocation(urdf_link_name=urdf_link_name, part_of=apartment_desig.resolve()))
     for name, item in objects_to_move:
         try:
@@ -269,10 +271,10 @@ with simulated_robot:
             found = False
         if found:
             drop_location_modified = next(drop_location)
-            drop_location_modified.pose.position.z += .5
+            drop_location_modified.pose.position.z += .45
             while check_for_collisions_mutlible_list(item, objects_to_move, drop_location_modified):
                 drop_location_modified = next(drop_location)
-                drop_location_modified.pose.position.z += .5
+                drop_location_modified.pose.position.z += .45
             TransportAction(item_desig,["left"],[drop_location_modified.pose]).resolve().perform()
         else:
             # CQ3: where to search for an item?
@@ -289,7 +291,7 @@ with simulated_robot:
                 whereToGrasp = [x for x in whereToGrasp if USDDrawerName != x]
                 # We assume we got a result, else we should signal an error
                 #     as before, PyCRAM does not need the USD prefix, so remove it from the name
-                handle_desig = ObjectPart(names=[x[len(USDPrefix)+1:] for x in whereToGrasp], part_of=apartment_desig.resolve())
+                handle_desig = ObjectPart(names=[x[len(USDPrefix):] for x in whereToGrasp], part_of=apartment_desig.resolve())
                 drawer_open_loc = AccessingLocation(handle_desig=handle_desig.resolve(),
                                         robot_desig=robot_desig.resolve()).resolve()
                 NavigateAction([drawer_open_loc.pose]).resolve().perform()
@@ -297,11 +299,11 @@ with simulated_robot:
                 OpenAction(object_designator_description=handle_desig, arms=["left"]).resolve().perform()
                 item.detach(apartment)
                 # Detect and pickup the item
-                LookAtAction([apartment.get_link_pose(whereToGrasp[0][len(USDPrefix)+1:])]).resolve().perform()
+                LookAtAction([apartment.get_link_pose(whereToGrasp[0][len(USDPrefix):])]).resolve().perform()
                 # TODO: item.type used to be ObjectType.SPOON, but this is not general enough
                 #     will this replacement work? If item is the spoon (it will be), is item.type=ObjectType.SPOON?
                 item_desig = DetectAction(BelieveObject(types=[item.type])).resolve().perform()
-                pickup_arm = "right"# if drawer_open_loc.arms[0] == "right" else "right"
+                pickup_arm = "right" #if drawer_open_loc.arms[0] == "right" else "right"
                 PickUpAction(item_desig, [pickup_arm], ["top"]).resolve().perform()
                 ParkArmsAction([Arms.BOTH]).resolve().perform()
                 close_loc = drawer_open_loc.pose
