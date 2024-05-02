@@ -65,6 +65,28 @@ def contact(
             return con_points != ()
 
 
+def prospection_contact(
+        object_to_prospect: Object,
+        objects_to_check_collision_with: Object,
+        new_pose: Pose,
+        return_links: bool = False) -> Union[bool, Tuple[bool, List]]:
+    """
+    Checks if two objects would be in contact if the object_to_prospect would be moved. It will be assumed that the new
+    position will be given in world frame.
+
+    :param object_to_prospect: The object which will be moved to the new pose
+    :param objects_to_check_collision_with: The second object with which the possible contact will be checked
+    :param new_pose: The new pose where the object_to_prospect will be moved to in world frame.
+    :param return_links: If the respective links on the objects that are in contact should be returned.
+    :return: True if the two objects are in contact False else. If links should be returned a list of links in contact
+    """
+    with UseProspectionWorld():
+        prospective_shadow_object = World.current_world.get_prospection_object_for_object(object_to_prospect)
+        shadow_objects_to_check = World.current_world.get_prospection_object_for_object(objects_to_check_collision_with)
+        prospective_shadow_object.set_pose(new_pose)
+        return contact(prospective_shadow_object, shadow_objects_to_check, return_links)
+
+
 def get_visible_objects(
         camera_pose: Pose,
         front_facing_axis: Optional[List[float]] = None) -> Tuple[np.ndarray, Pose]:
