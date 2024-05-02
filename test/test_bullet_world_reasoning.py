@@ -46,3 +46,7 @@ class TestCaseBulletWorldReasoning(BulletWorldTestCase):
     def test_supporting(self):
         self.milk.set_pose(Pose([1.3, 0, 0.9]))
         self.assertTrue(btr.supporting(self.kitchen, self.milk))
+
+    def test_prospection_contact(self):
+        self.milk.set_pose(Pose([42,42,42]))
+        self.assertTrue(btr.prospection_contact(self.cereal,self.milk,Pose([42,42,42])))
